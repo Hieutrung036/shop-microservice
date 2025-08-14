@@ -1,0 +1,63 @@
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: shop_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: shop_db
+      MYSQL_USER: shop_user
+      MYSQL_PASSWORD: shop123
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - shop_network
+
+  # Backend API (NestJS)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: shop_backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_HOST=mysql
+      - DATABASE_PORT=3306
+      - DATABASE_USERNAME=shop_user
+      - DATABASE_PASSWORD=shop123
+      - DATABASE_NAME=shop_db
+      - JWT_SECRET=your_jwt_secret_key_here
+    depends_on:
+      - mysql
+    volumes:
+      - ./backend/uploads:/app/uploads
+    networks:
+      - shop_network
+
+  # Frontend (Next.js)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: shop_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://1.54.243.244:3001
+    depends_on:
+      - backend
+    networks:
+      - shop_network
+
+volumes:
+  mysql_data:
+
+networks:
+  shop_network:
+    driver: bridge 
